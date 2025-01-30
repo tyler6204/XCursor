@@ -25,6 +25,7 @@ struct CursorSwitcherApp: App {
             AppIcon()
                 .environmentObject(model)
                 .onAppear {
+                    
                     if model.isFirstLaunch {
                         openWindow(id: "Instructions")
                     } else {

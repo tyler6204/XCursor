@@ -5,131 +5,218 @@
 //  Created by Tyler Yust on 1/29/25.
 //
 
+//
+//  XcodeListener.swift
+//  CursorSwitcher
+//
+//  Created by Tyler Yust on 1/29/25.
+//
+
 import Foundation
 import Network
 import AppKit
 
 class XcodeFileListener {
+    // MARK: - Properties
+    
     let port: NWEndpoint.Port = 8124
-    var listener: NWListener!
+    private var listener: NWListener?
     private var projectRoot: URL?
+    private var connections: [UUID: NWConnection] = [:]
+    
     private var viewModel: ViewModel
-    private var reconnectTimer: Timer?
-    private let reconnectInterval: TimeInterval = 5.0 // Reconnect every 5 seconds
-    private var hasActiveConnection = false
-
+    
+    private let queue = DispatchQueue(label: "com.tyleryust.xcursor.listener")
+    
+    // Heartbeat
+    private var heartbeatTimer: Timer?
+    private let heartbeatInterval: TimeInterval = 30.0  // e.g. 30 seconds
+    private var lastHeartbeatResponse: Date = Date()
+    private let heartbeatTimeout: TimeInterval = 60.0   // e.g. 60 seconds
+    
+    // We only shut down if explicitly called:
+    private var isShuttingDown = false
+    
+    // MARK: - Init
+    
     init(projectRoot: URL, viewModel: ViewModel) {
         self.projectRoot = projectRoot
         self.viewModel = viewModel
+        
+        createListener()
+        start()
+        startHeartbeat()
+    }
+    
+    // MARK: - Create & Start Listener
+    
+    private func createListener() {
         do {
-            self.listener = try NWListener(using: .tcp, on: port)
-            print("🚀 XcodeListener is listening on port \(port)")
-        } catch { 
-            fatalError("❌ Unable to create listener: \(error)")
+            let parameters = NWParameters.tcp
+            parameters.allowLocalEndpointReuse = true
+            parameters.allowFastOpen = true
+            
+            // Enable TCP keepalive
+            if let tcpOptions = parameters.defaultProtocolStack.internetProtocol as? NWProtocolTCP.Options {
+                tcpOptions.enableKeepalive = true
+                tcpOptions.keepaliveIdle = 5      // seconds before keep-alive probes start
+                tcpOptions.keepaliveCount = 5     // number of keep-alive probes
+                tcpOptions.keepaliveInterval = 2  // seconds between keep-alive probes
+            }
+            
+            self.listener = try NWListener(using: parameters, on: port)
+            print("🚀 XcodeListener created on port \(port)")
+        } catch {
+            print("❌ Unable to create listener: \(error)")
+            // Normally, you might decide to retry after a delay. But we do NOT
+            // auto-reconnect in this version—if it fails here, you must fix the port conflict or error.
         }
     }
-
+    
     func start() {
-        listener.stateUpdateHandler = { [weak self] newState in
-            guard let self = self else { return }
-            
-            switch newState {
-            case .ready:
-                print("✅ XCursor is running on port \(self.port)")
-                DispatchQueue.main.async {
-                    if !self.hasActiveConnection {
-                        self.viewModel.isConnected = false
-                        self.startReconnectTimer()
-                    }
-                }
-            case .failed, .cancelled:
-                print("❌ XCursor connection failed or cancelled")
-                DispatchQueue.main.async {
-                    self.hasActiveConnection = false
-                    self.viewModel.isConnected = false
-                    self.startReconnectTimer()
-                }
-            default:
-                break
-            }
+        guard let listener = listener else {
+            print("⚠️ No listener available, skipping start.")
+            return
         }
-
-        listener.newConnectionHandler = { [weak self] connection in
-            guard let self = self else { return }
+        
+        isShuttingDown = false
+        
+        // Update the listener's state in real time
+        listener.stateUpdateHandler = { [weak self] newState in
+            guard let self = self, !self.isShuttingDown else { return }
             
-            connection.stateUpdateHandler = { state in
-                switch state {
+            self.queue.async {
+                switch newState {
                 case .ready:
-                    DispatchQueue.main.async {
-                        self.hasActiveConnection = true
-                        self.viewModel.isConnected = true
-                        self.stopReconnectTimer()
-                    }
-                case .failed, .cancelled:
-                    DispatchQueue.main.async {
-                        self.hasActiveConnection = false
-                        self.viewModel.isConnected = false
-                        self.startReconnectTimer()
-                    }
+                    print("✅ XCursor is running on port \(self.port)")
+                    // We don't set isConnected = true here, because that depends on actual NWConnections.
+                case .failed(let error):
+                    // This usually means a fatal error (e.g. port is in use).
+                    print("❌ XCursor connection failed: \(error)")
+                    // In this simplified version, we do NOT automatically restart.
+                case .cancelled:
+                    print("❌ XCursor connection cancelled")
                 default:
                     break
                 }
             }
-            
-            connection.start(queue: .main)
-            self.receive(on: connection)
         }
-
-        listener.start(queue: .main)
+        
+        // Accept new incoming connections
+        listener.newConnectionHandler = { [weak self] connection in
+            guard let self = self, !self.isShuttingDown else { return }
+            
+            self.queue.async {
+                let connectionId = UUID()
+                self.connections[connectionId] = connection
+                
+                // Monitor each connection's state
+                connection.stateUpdateHandler = { [weak self] state in
+                    guard let self = self else { return }
+                    
+                    self.queue.async {
+                        switch state {
+                        case .ready:
+                            // Mark that we have at least one active connection
+                            self.updateViewModelConnectionStatus()
+                            print("🔗 New connection ready (\(connectionId))")
+                        case .failed, .cancelled:
+                            print("🔌 Connection \(connectionId) ended: \(state)")
+                            self.connections.removeValue(forKey: connectionId)
+                            self.updateViewModelConnectionStatus()
+                        default:
+                            break
+                        }
+                    }
+                }
+                
+                // Start the connection
+                connection.start(queue: self.queue)
+                
+                // Begin receiving data
+                self.receive(on: connection)
+            }
+        }
+        
+        // Start listening
+        listener.start(queue: queue)
     }
-
-    private func startReconnectTimer() {
-        stopReconnectTimer()
-        reconnectTimer = Timer.scheduledTimer(withTimeInterval: reconnectInterval, repeats: true) { [weak self] _ in
+    
+    // MARK: - Heartbeat
+    
+    private func startHeartbeat() {
+        stopHeartbeat() // in case it's somehow running already
+        
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            if !self.hasActiveConnection {
-                print("🔄 Attempting to reconnect...")
-                self.listener.cancel()
-                do {
-                    self.listener = try NWListener(using: .tcp, on: self.port)
-                    self.start()
-                } catch {
-                    print("❌ Failed to create new listener: \(error)")
+            
+            self.heartbeatTimer = Timer.scheduledTimer(withTimeInterval: self.heartbeatInterval, repeats: true) { [weak self] _ in
+                guard let self = self, !self.isShuttingDown else { return }
+                
+                // Send a heartbeat to any active connections
+                if self.connections.isEmpty {
+                    // No active connections. You can log something or do nothing.
+                    // We do NOT attempt any "reconnect" logic here.
+                    // print("ℹ️ No active connections; still listening…")
+                } else {
+                    // Send heartbeat to existing connections
+                    self.connections.values.forEach { connection in
+                        self.sendHeartbeat(on: connection)
+                    }
                 }
             }
         }
     }
     
-    private func stopReconnectTimer() {
-        reconnectTimer?.invalidate()
-        reconnectTimer = nil
+    private func stopHeartbeat() {
+        DispatchQueue.main.async { [weak self] in
+            self?.heartbeatTimer?.invalidate()
+            self?.heartbeatTimer = nil
+        }
     }
-
+    
+    private func sendHeartbeat(on connection: NWConnection) {
+        let heartbeat = "heartbeat".data(using: .utf8)!
+        connection.send(content: heartbeat, completion: .contentProcessed { error in
+            if let error = error {
+                print("⚠️ Heartbeat send failed: \(error)")
+            }
+        })
+    }
+    
+    // MARK: - Receiving Data
+    
     private func receive(on connection: NWConnection) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 1024) { data, _, isComplete, error in
-            if let data = data, let message = String(data: data, encoding: .utf8) {
-                self.handleMessage(message)
+        connection.receive(minimumIncompleteLength: 1,
+                           maximumLength: 65536) { [weak self] data, _, isComplete, error in
+            guard let self = self else { return }
+            
+            if let data = data {
+                if let message = String(data: data, encoding: .utf8) {
+                    if message == "heartbeat" {
+                        self.lastHeartbeatResponse = Date()
+                        // You might log or track that you got a heartbeat from the client
+                    } else {
+                        // Handle normal file path messages
+                        self.handleMessage(message)
+                    }
+                }
             }
             
             if let error = error {
-                print("❌ Connection error: \(error)")
-                connection.cancel()
-                return
+                print("❌ Receive error: \(error)")
+                // The connection may or may not close immediately after this error.
             }
             
-            if isComplete {
-                connection.cancel()
-            } else {
+            // Keep reading if there's more data coming
+            if !isComplete {
                 self.receive(on: connection)
             }
         }
     }
-
-    func updateProjectRoot(_ newRoot: URL) {
-        self.projectRoot = newRoot
-        print("📂 Updated project root to: \(newRoot.path)")
-    }
-
+    
+    // MARK: - Handling Incoming Messages
+    
     private func handleMessage(_ message: String) {
         print("Message Received")
         
@@ -137,15 +224,16 @@ class XcodeFileListener {
         if let data = message.data(using: .utf8),
            let dict = try? JSONSerialization.jsonObject(with: data) as? [String: String],
            let filePath = dict["path"] {
+            
             handleFilePath(filePath)
+            
         } else {
-            // Fallback to treating the message as a plain file path
-            // Clean up the message by removing any trailing whitespace or newlines
+            // Otherwise, treat the message as a plain file path
             let filePath = message.trimmingCharacters(in: .whitespacesAndNewlines)
             handleFilePath(filePath)
         }
     }
-
+    
     private func handleFilePath(_ filePath: String) {
         // Remove any .git extension that might be incorrectly appended
         let cleanPath = filePath.replacingOccurrences(of: ".git", with: "")
@@ -167,14 +255,14 @@ class XcodeFileListener {
             print("⚠️ No project root set")
         }
     }
-
+    
     private func doesFileContainPreview(path: String) -> Bool {
         guard let projectRoot = projectRoot else {
             print("⚠️ No project root set")
             return false
         }
         
-        // Start a security-scoped resource access
+        // Access the security-scoped resource if needed (for sandboxed apps)
         guard projectRoot.startAccessingSecurityScopedResource() else {
             print("❌ Failed to access security-scoped resource")
             return false
@@ -183,8 +271,7 @@ class XcodeFileListener {
             projectRoot.stopAccessingSecurityScopedResource()
         }
         
-        
-        // Try to read the file contents directly without additional permission prompts
+        // Try to read the file contents
         do {
             let fileContent = try String(contentsOfFile: path, encoding: .utf8)
             return fileContent.contains("#Preview") || fileContent.contains("PreviewProvider")
@@ -193,33 +280,74 @@ class XcodeFileListener {
             return false
         }
     }
-
+    
     /// Opens the file in Xcode **only if** it contains a SwiftUI Preview.
     private func openInXcode(path: String) {
         let fileHasPreview = doesFileContainPreview(path: path)
         print("File '\(path)' \(fileHasPreview ? "contains" : "does NOT contain") a SwiftUI preview.")
-
+        
         // If the file doesn't contain a preview, do nothing
         guard fileHasPreview else {
             return
         }
-
-        // Locate Xcode on the system by its bundle identifier
+        
+        // Locate Xcode by its bundle identifier
         guard let xcodeURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.dt.Xcode") else {
             print("❌ Xcode not found on the system.")
             return
         }
-
+        
         let fileURL = URL(fileURLWithPath: path)
-
+        
         // Open the file in Xcode without bringing it to the foreground
         let config = NSWorkspace.OpenConfiguration()
-        config.activates = false // Ensures Xcode does NOT become active
-
-        NSWorkspace.shared.open([fileURL], withApplicationAt: xcodeURL, configuration: config, completionHandler: nil)
+        config.activates = false  // Ensures Xcode does NOT become active
+        
+        NSWorkspace.shared.open([fileURL], withApplicationAt: xcodeURL,
+                                configuration: config, completionHandler: nil)
         
         print("✅ Successfully opened file in Xcode (in background): \(path)")
     }
-
-
+    
+    // MARK: - Project Root Updates
+    
+    func updateProjectRoot(_ newRoot: URL) {
+        self.projectRoot = newRoot
+        print("📂 Updated project root to: \(newRoot.path)")
+    }
+    
+    // MARK: - Shutdown
+    
+    func shutdown() {
+        queue.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.isShuttingDown = true
+            
+            // Stop heartbeats
+            self.stopHeartbeat()
+            
+            // Cancel any active connections
+            self.cleanupConnections()
+            
+            // Finally cancel the listener
+            self.listener?.cancel()
+            self.listener = nil
+        }
+    }
+    
+    private func cleanupConnections() {
+        connections.values.forEach { $0.cancel() }
+        connections.removeAll()
+    }
+    
+    // MARK: - View Model Updates
+    
+    /// Updates `viewModel.isConnected` based on whether we have any active connections.
+    private func updateViewModelConnectionStatus() {
+        let currentlyConnected = !connections.isEmpty
+        DispatchQueue.main.async {
+            self.viewModel.isConnected = currentlyConnected
+        }
+    }
 }

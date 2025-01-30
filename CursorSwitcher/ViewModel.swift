@@ -15,6 +15,7 @@ class ViewModel: ObservableObject {
     @Published var isConnected = false
     @Published var isEnabled = UserDefaults.standard.bool(forKey: "IsEnabled")
     @Published var isFirstLaunch = !UserDefaults.standard.bool(forKey: "HasLaunchedBefore")
+    @Published var showAccessibilityAlert = false
 
     private var server: XcodeFileListener?
     
@@ -55,31 +56,43 @@ class ViewModel: ObservableObject {
         }
     }
     
+    
     func toggleEnabled() {
+        
+        // If we're disabling, stop the server first
+        if isEnabled {
+            stopServer()
+        }
+        
+        // Update the enabled state
         isEnabled.toggle()
         UserDefaults.standard.set(isEnabled, forKey: "IsEnabled")
         
-        // Handle server state based on enabled status
+        // If we're enabling, start the server
         if isEnabled {
-            // If we have a stored project root, restart the server
-            if let bookmarkData = UserDefaults.standard.data(forKey: "ProjectRootBookmark") {
-                do {
-                    var isStale = false
-                    let url = try URL(resolvingBookmarkData: bookmarkData,
-                                    options: .withSecurityScope,
-                                    relativeTo: nil,
-                                    bookmarkDataIsStale: &isStale)
-                    
-                    if !isStale {
-                        self.startServer(with: url)
+            // Force a small delay to ensure port cleanup
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if let bookmarkData = UserDefaults.standard.data(forKey: "ProjectRootBookmark") {
+                    do {
+                        var isStale = false
+                        let url = try URL(resolvingBookmarkData: bookmarkData,
+                                        options: .withSecurityScope,
+                                        relativeTo: nil,
+                                        bookmarkDataIsStale: &isStale)
+                        
+                        if isStale {
+                            self.showFolderSelector()
+                        } else {
+                            self.startServer(with: url)
+                        }
+                    } catch {
+                        print("❌ Failed to resolve bookmark: \(error)")
+                        self.showFolderSelector()
                     }
-                } catch {
-                    print("❌ Failed to resolve bookmark: \(error)")
+                } else {
+                    self.showFolderSelector()
                 }
             }
-        } else {
-            // Stop the server when disabled
-            self.stopServer()
         }
     }
     
@@ -93,9 +106,11 @@ class ViewModel: ObservableObject {
     
     func stopServer() {
         DispatchQueue.main.async {
-            self.server?.listener.cancel()
+            self.server?.shutdown()
             self.server = nil
             self.isConnected = false
+            // Force a small delay to ensure port cleanup
+            Thread.sleep(forTimeInterval: 0.1)
         }
     }
     
