@@ -21,13 +21,16 @@ struct InstructionsView: View {
                     
                     GroupBox("Setup Steps") {
                         VStack(alignment: .leading, spacing: 8) {
-                            InstructionStep(number: 1, text: "Open your iOS project in both Xcode and VSCode/Cursor")
-                            InstructionStep(number: 2, text: "In Xcode, open a file with SwiftUI preview and maximize the preview pane")
+                            InstructionStep(number: 1, text: "Install required extensions in VSCode/Cursor:\n• Swift by Swift Server Work Group\n• Sweetpad by sweetpad\n• XcodeSync")
+                            InstructionStep(number: 2, text: "Open your iOS project in Xcode and import the XcodeSync companion script")
                             InstructionStep(number: 3, text: "Press ⌥⌘T in Xcode to enable compact view")
-                            InstructionStep(number: 4, text: "Position Xcode and VSCode/Cursor side by side")
-                            InstructionStep(number: 5, text: "Resize Xcode to as small as possible width wise, close the sidebar and make preview as large as possible")
-                            InstructionStep(number: 6, text: "Enable XCursor using the toggle in the menu bar")
-                            InstructionStep(number: 7, text: "Select your project root folder when prompted")
+                            InstructionStep(number: 4, text: "Open a file with SwiftUI preview and maximize the preview pane")
+                            InstructionStep(number: 5, text: "In VSCode/Cursor, open the parent folder containing your .xcodeproj")
+                            InstructionStep(number: 6, text: "Press ⌘⇧P, search for 'sweetpad' and select 'Generate Build Server Config'")
+                            InstructionStep(number: 7, text: "Press ⌘⇧P again, run 'Build Without Run' and select any device")
+                            InstructionStep(number: 8, text: "Position Xcode and VSCode/Cursor side by side")
+                            InstructionStep(number: 9, text: "Resize Xcode to minimum width, keeping preview visible")
+                            InstructionStep(number: 10, text: "Enable XCursor using the toggle in the menu bar")
                         }
                         .padding(.vertical, 8)
                     }
