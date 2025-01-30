@@ -21,8 +21,8 @@ struct InstructionsView: View {
                     
                     GroupBox("Setup Steps") {
                         VStack(alignment: .leading, spacing: 8) {
-                            InstructionStep(number: 1, text: "Install required extensions in VSCode/Cursor:\n• Swift by Swift Server Work Group\n• Sweetpad by sweetpad\n• XcodeSync")
-                            InstructionStep(number: 2, text: "Open your iOS project in Xcode and import the XcodeSync companion script")
+                            InstructionStep(number: 1, text: "Install required extensions in VSCode/Cursor:\n• Swift by Swift Server Work Group\n• Sweetpad by sweetpad\n• XCursor (Sync Xcode) by tyleryust")
+                            InstructionStep(number: 2, text: "Open your iOS project in Xcode and import the XCursor companion script")
                             InstructionStep(number: 3, text: "Press ⌥⌘T in Xcode to enable compact view")
                             InstructionStep(number: 4, text: "Open a file with SwiftUI preview and maximize the preview pane")
                             InstructionStep(number: 5, text: "In VSCode/Cursor, open the parent folder containing your .xcodeproj")
