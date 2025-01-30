@@ -21,16 +21,17 @@ struct InstructionsView: View {
                     
                     GroupBox("Setup Steps") {
                         VStack(alignment: .leading, spacing: 8) {
-                            InstructionStep(number: 1, text: "Install required extensions in VSCode/Cursor:\n• Swift by Swift Server Work Group\n• Sweetpad by sweetpad\n• XCursor (Sync Xcode) by tyleryust")
-                            InstructionStep(number: 2, text: "Open your iOS project in Xcode and import the XCursor companion script")
-                            InstructionStep(number: 3, text: "Press ⌥⌘T in Xcode to enable compact view")
-                            InstructionStep(number: 4, text: "Open a file with SwiftUI preview and maximize the preview pane")
-                            InstructionStep(number: 5, text: "In VSCode/Cursor, open the parent folder containing your .xcodeproj")
-                            InstructionStep(number: 6, text: "Press ⌘⇧P, search for 'sweetpad' and select 'Generate Build Server Config'")
-                            InstructionStep(number: 7, text: "Press ⌘⇧P again, run 'Build Without Run' and select any device")
-                            InstructionStep(number: 8, text: "Position Xcode and VSCode/Cursor side by side")
-                            InstructionStep(number: 9, text: "Resize Xcode to minimum width, keeping preview visible")
-                            InstructionStep(number: 10, text: "Enable XCursor using the toggle in the menu bar")
+                            InstructionStep(number: 1, text: "Install required extensions in VSCode/Cursor:\n• Swift by Swift Server Work Group\n• Sweetpad by sweetpad\n• XCursor (Sync Xcode)")
+                            InstructionStep(number: 2, text: "Download XCursor from TestFlight: testflight.apple.com/join/64N57Q66")
+                            InstructionStep(number: 3, text: "Open your iOS project in Xcode")
+                            InstructionStep(number: 4, text: "Press ⌥⌘T in Xcode to enable compact view")
+                            InstructionStep(number: 5, text: "Open a file with SwiftUI preview and maximize the preview pane")
+                            InstructionStep(number: 6, text: "In VSCode/Cursor, open the parent folder containing your .xcodeproj")
+                            InstructionStep(number: 7, text: "Press ⌘⇧P, search for 'sweetpad' and select 'Generate Build Server Config'")
+                            InstructionStep(number: 8, text: "Press ⌘⇧P again, run 'Build Without Run' and select any device")
+                            InstructionStep(number: 9, text: "Position Xcode and VSCode/Cursor side by side")
+                            InstructionStep(number: 10, text: "Resize Xcode to minimum width, keeping preview visible")
+                            InstructionStep(number: 11, text: "Enable XCursor using the toggle in the menu bar")
                         }
                         .padding(.vertical, 8)
                     }
