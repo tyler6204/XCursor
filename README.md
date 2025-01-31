@@ -18,6 +18,9 @@ XCursor enables seamless iOS development in VSCode/Cursor while maintaining live
 - 📱 iOS development in your preferred editor
 - 🚀 Intelligent dependency resolution
 - ⚡️ Swift/iOS code completion
+- 🔄 **Smart File Switching**: Automatically switches to files with preview content
+  - Currently only switches to files that have preview content available
+  - Full file switching capability coming soon if wanted (I don't prefer it)
 
 ## How It Works
 

@@ -8,6 +8,8 @@
 	<string></string>
 	<key>NSAppleScriptEnabled</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>com.apple.security.automation.apple-events</key>
 	<string></string>
 	<key>com.apple.security.temporary-exception.apple-events</key>
