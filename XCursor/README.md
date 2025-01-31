@@ -9,6 +9,7 @@ XCursor enables seamless iOS development in VSCode/Cursor while maintaining live
    - Swift by Swift Server Work Group
    - Sweetpad by sweetpad
    - XCursor (Sync Xcode)
+3. For detailed setup instructions, click the XCursor icon in your Mac's menu bar and select "How to Use"
 
 ## Features
 
@@ -17,10 +18,14 @@ XCursor enables seamless iOS development in VSCode/Cursor while maintaining live
 - 📱 iOS development in your preferred editor
 - 🚀 Intelligent dependency resolution
 - ⚡️ Swift/iOS code completion
+- 🔄 **Smart File Switching**: Automatically switches to files with preview content
+  - Currently only switches to files that have preview content available
+  - Full file switching capability coming soon if wanted (I don't prefer it)
 
 ## How It Works
 
 XCursor consists of two parts:
+
 1. A native Mac app (available on TestFlight) that handles the Xcode integration
 2. A VSCode extension that manages the editor integration
 
@@ -29,6 +34,7 @@ Together, they create a seamless development experience that combines the power 
 ## Status Indicators
 
 The menu bar icon shows the current sync status:
+
 - 📄 Connected and syncing
 - 🔍 Not connected to project
 - 📄❌ XCursor is disabled
@@ -36,6 +42,7 @@ The menu bar icon shows the current sync status:
 ## Troubleshooting
 
 If sync isn't working:
+
 - Verify all extensions are installed
 - Check Accessibility permissions
 - Ensure build server configuration is generated
