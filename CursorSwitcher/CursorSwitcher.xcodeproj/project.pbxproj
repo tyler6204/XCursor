@@ -8,7 +8,6 @@
 
 /* Begin PBXFileReference section */
 		996F96362D4AD2E300E453F1 /* CursorSwitcher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CursorSwitcher.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		9973B0DC2D4C505600791080 /* CursorSwitcher.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = CursorSwitcher.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -55,13 +54,6 @@
 			isa = PBXGroup;
 			children = (
 				996F96362D4AD2E300E453F1 /* CursorSwitcher.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		9973B0DD2D4C505600791080 /* Products */ = {
-			isa = PBXGroup;
-			children = (
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -118,12 +110,6 @@
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 996F96372D4AD2E300E453F1 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 9973B0DD2D4C505600791080 /* Products */;
-					ProjectRef = 9973B0DC2D4C505600791080 /* CursorSwitcher.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				996F96352D4AD2E300E453F1 /* CursorSwitcher */,
