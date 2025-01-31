@@ -31,16 +31,12 @@ DerivedData/
 !.vscode/extensions.json
 *.code-workspace
 
-# Node/TypeScript
-node_modules/
-dist/
-out/
-*.tsbuildinfo
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# VSCode Extension
+VSCode Extension/**/node_modules/
+VSCode Extension/**/dist/
+VSCode Extension/**/out/
+VSCode Extension/**/*.tsbuildinfo
+VSCode Extension/**/.env*
 
 # Build outputs
 *.vsix
