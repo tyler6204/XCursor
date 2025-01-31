@@ -8,7 +8,8 @@ XCursor enables seamless iOS development in VSCode/Cursor while maintaining live
 2. Install required VSCode extensions:
    - Swift by Swift Server Work Group
    - Sweetpad by sweetpad
-   - XCursor (Sync Xcode)
+   - XCursor (Sync Xcode) by Tyler Yust
+3. Follow the instructions on the MacOS Beta App
 
 ## Features
 
