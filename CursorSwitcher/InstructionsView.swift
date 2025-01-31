@@ -12,7 +12,7 @@ struct InstructionsView: View {
     @EnvironmentObject var viewModel: ViewModel
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("How to Use XCursor")
@@ -75,6 +75,7 @@ struct InstructionsView: View {
                 .padding()
             }
             .navigationTitle("Instructions")
+            .fixedSize()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Get Started") {

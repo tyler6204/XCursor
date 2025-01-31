@@ -61,16 +61,6 @@ struct AppMenu: View {
             .padding(.horizontal, 8)
         }
         .padding(.vertical, 8)
-        .alert("Accessibility Permission Required", isPresented: $appState.showAccessibilityAlert) {
-            Button("Open System Settings") {
-                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-                    NSWorkspace.shared.open(url)
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("XCursor needs accessibility permissions to function properly. Please enable it in System Settings > Privacy & Security > Accessibility.")
-        }
     }
     
     private var statusColor: Color {

@@ -9,6 +9,7 @@ XCursor enables seamless iOS development in VSCode/Cursor while maintaining live
    - Swift by Swift Server Work Group
    - Sweetpad by sweetpad
    - XCursor (Sync Xcode)
+3. For detailed setup instructions, click the XCursor icon in your Mac's menu bar and select "How to Use"
 
 ## Features
 

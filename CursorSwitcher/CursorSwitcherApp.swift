@@ -39,7 +39,7 @@ struct CursorSwitcherApp: App {
             InstructionsView()
                 .environmentObject(model)
         }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
+        .windowStyle(.automatic)
+        .windowResizability(.automatic)
     }
 }

@@ -15,7 +15,6 @@ class ViewModel: ObservableObject {
     @Published var isConnected = false
     @Published var isEnabled = UserDefaults.standard.bool(forKey: "IsEnabled")
     @Published var isFirstLaunch = !UserDefaults.standard.bool(forKey: "HasLaunchedBefore")
-    @Published var showAccessibilityAlert = false
 
     private var server: XcodeFileListener?
     
